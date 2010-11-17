@@ -118,6 +118,7 @@ class Game(World):
         self.addbuilding(Conveyor((10,3), 'up'))
         self.addbuilding(Conveyor((9, 3), 'right'))
         self.addbuilding(Conveyor((9, 2), 'down'))
+        self.addbuilding(Extractor((8,2), 'right'))
         self.additem((9, 2), ItemA())
         self.additem((9, 3), ItemA())
     def keydown(self, key):
@@ -165,6 +166,13 @@ class Game(World):
                 if building and building.type == 'Hangar' and self.grid[x][y]['item'] != None:
                     self.money += self.grid[x][y]['item'].value
                     self.grid[x][y]['item'] = None
+                if building and building.type == 'Extractor':
+                    building.timer -= dt
+                    adj = adjacent((x,y), building.dir)
+                    if building.timer <= 0.0 and self.grid[adj[0]][adj[1]]['item'] == None:
+                        print 'Extracted'
+                        self.additem(adj, ItemA())
+                        building.reset_timer()
 
 def adjacent((x, y), dir):
     if dir == 'up':
@@ -182,6 +190,18 @@ class ItemA:
         self.value = 1
     def draw(self):
         return (0.1, 0.1, 0.8, 1.0)
+
+class Extractor:
+    def __init__(self, pos, dir):
+        self.pos = pos
+        self.size = (1, 1)
+        self.type = 'Extractor'
+        self.timer = 0.0
+        self.dir = dir
+    def reset_timer(self):
+        self.timer = random.random() * 10 + 10
+    def draw(self):
+        return self.pos, self.size, (0.3, 0.3, 0.3, 1.0), None
 
 class Hangar:
     def __init__(self, pos):
