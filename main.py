@@ -13,7 +13,7 @@ import pygame
 import math
 import texture
 
-from world import getworld, Game, transitionto
+from world import getworld, Game, transitionto, setworldsize
 
 import screen
 import texture
@@ -25,6 +25,7 @@ pygame.init()
 
 size = 1280,960
 worldsize = screen.init(size)
+setworldsize(worldsize)
 
 transitionto(Game)
 
@@ -43,6 +44,7 @@ while 1:
             getworld().click([float(x) * ws / s for x, ws, s in zip(e.pos, worldsize, size)])
     thisframe = pygame.time.get_ticks()
     dt = (thisframe - lastframe)/1000.0
+#    print dt
     lastframe = thisframe
     getworld().step(dt)
     screen.startframe()
