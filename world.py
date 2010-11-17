@@ -207,9 +207,7 @@ class Game(World):
             if building.type == 'Factory':
                 if building.running:
                     building.prodtime -= dt
-                    print 'running:', building.prodtime
                     if building.prodtime <= 0.0 and self.grid[building.output[0]][building.output[1]]['item'] == None:
-                        print 'done'
                         building.running = False
                         self.additem(building.output, ItemB())
 
@@ -311,6 +309,5 @@ class Factory:
         self.materials -= self.materialsneeded
         self.running = True
         self.prodtime = self.runtime
-        print 'running'
     def draw(self):
         return self.pos, self.size, (0.5, 0.5, 1.0, 1.0), self.texture
