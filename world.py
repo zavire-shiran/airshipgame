@@ -59,20 +59,20 @@ class buffer:
         glDrawElementsui(GL_TRIANGLES, self.indexbuffer)
         glDisableClientState(GL_VERTEX_ARRAY)
 
-def drawtext(pos, text):
-    text = texture.Text(str(text), 60)
+def drawtext(pos, text, level = 0.0):
+    text = texture.Text(str(text))
     size = (text.horizsize(0.2), 0.2)
     orig = (pos[0] - size[0]/2.0, pos[1] - size[1]/2.0)
     text()
     glBegin(GL_QUADS)
     glTexCoord(0.0, 0.0)
-    glVertex(orig[0], orig[1])
+    glVertex(orig[0], orig[1], level)
     glTexCoord(text.bounds[0], 0.0)
-    glVertex(orig[0] + size[0], orig[1])
+    glVertex(orig[0] + size[0], orig[1], level)
     glTexCoord(text.bounds[0], text.bounds[1])
-    glVertex(orig[0] + size[0], orig[1] + size[1])
+    glVertex(orig[0] + size[0], orig[1] + size[1], level)
     glTexCoord(0.0, text.bounds[1])
-    glVertex(orig[0], orig[1] + size[1])
+    glVertex(orig[0], orig[1] + size[1], level)
     glEnd()
 
 class World:
@@ -110,6 +110,7 @@ class Game(World):
         self.gridsize = (1.0 / self.size[0] * worldsize[0], 1.0 / self.size[1] * worldsize[1])
         self.grid = make_grid(self.size)
         self.buildings = []
+        self.money = 0
         self.addbuilding(Hangar((0,0)))
         for x in xrange(3, 11):
             self.addbuilding(Conveyor((x,1), 'left'))
@@ -147,6 +148,8 @@ class Game(World):
                 if self.grid[x][y]['item']:
                     glColor(*self.grid[x][y]['item'].draw())
                     drawsquare(game2world((x + 0.25, y + 0.25), self.size), (self.gridsize[0] * 0.5, self.gridsize[1] * 0.5), None, 2.0)
+        glColor(0.1, 0.8, 0.1)
+        drawtext(game2world((1.,1.), self.size), str(self.money), 2.0)
     def step(self, dt):
         for x in xrange(self.size[0]):
             for y in xrange(self.size[1]):
@@ -155,11 +158,14 @@ class Game(World):
                     building.timer += dt
                     if building.timer > 1.0:
                         adj = adjacent((x,y), building.dir)
-                        print building.dir
                         if self.grid[adj[0]][adj[1]]['item'] == None:
                             self.grid[adj[0]][adj[1]]['item'] = self.grid[x][y]['item']
                             self.grid[x][y]['item'] = None
                             building.timer = 0.0
+                if building and building.type == 'Hangar' and self.grid[x][y]['item'] != None:
+                    self.money += self.grid[x][y]['item'].value
+                    self.grid[x][y]['item'] = None
+
 def adjacent((x, y), dir):
     if dir == 'up':
         return (x, y-1)
@@ -173,7 +179,7 @@ def adjacent((x, y), dir):
 
 class ItemA:
     def __init__(self):
-        pass
+        self.value = 1
     def draw(self):
         return (0.1, 0.1, 0.8, 1.0)
 
