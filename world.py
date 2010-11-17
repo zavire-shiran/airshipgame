@@ -61,7 +61,7 @@ class buffer:
 
 def drawtext(pos, text, level = 0.0):
     text = texture.Text(str(text))
-    size = (text.horizsize(0.2), 0.2)
+    size = (text.horizsize(0.1), 0.1)
     orig = (pos[0] - size[0]/2.0, pos[1] - size[1]/2.0)
     text()
     glBegin(GL_QUADS)
@@ -112,15 +112,23 @@ class Game(World):
         self.buildings = []
         self.money = 0
         self.addbuilding(Hangar((0,0)))
-        for x in xrange(3, 11):
+        for x in xrange(3, 10):
+            self.addbuilding(Extractor((x,0), 'down'))
             self.addbuilding(Conveyor((x,1), 'left'))
-        self.addbuilding(Conveyor((10,2), 'up'))
-        self.addbuilding(Conveyor((10,3), 'up'))
-        self.addbuilding(Conveyor((9, 3), 'right'))
-        self.addbuilding(Conveyor((9, 2), 'down'))
-        self.addbuilding(Extractor((8,2), 'right'))
-        self.additem((9, 2), ItemA())
-        self.additem((9, 3), ItemA())
+            self.addbuilding(Extractor((x,2), 'up'))
+        self.addbuilding(Conveyor((1,3), 'up'))
+        self.addbuilding(Conveyor((1,4), 'up'))
+        self.addbuilding(Extractor((1,5), 'up'))
+        for x in xrange(2, 9):
+            self.addbuilding(Extractor((x,3), 'down'))
+            self.addbuilding(Conveyor((x,4), 'left'))
+            self.addbuilding(Extractor((x,5), 'up'))
+        for y in xrange(3, 8):
+            self.addbuilding(Conveyor((0,y), 'up'))
+        for x in xrange(1, 8):
+            self.addbuilding(Extractor((x,6), 'down'))
+            self.addbuilding(Conveyor((x,7), 'left'))
+            self.addbuilding(Extractor((x,8), 'up'))
     def keydown(self, key):
         pass
     def keyup(self,key):
@@ -150,7 +158,7 @@ class Game(World):
                     glColor(*self.grid[x][y]['item'].draw())
                     drawsquare(game2world((x + 0.25, y + 0.25), self.size), (self.gridsize[0] * 0.5, self.gridsize[1] * 0.5), None, 2.0)
         glColor(0.1, 0.8, 0.1)
-        drawtext(game2world((1.,1.), self.size), str(self.money), 2.0)
+        drawtext(game2world((1.,1.), self.size), '$'+str(self.money), 2.0)
     def step(self, dt):
         for x in xrange(self.size[0]):
             for y in xrange(self.size[1]):
@@ -170,7 +178,6 @@ class Game(World):
                     building.timer -= dt
                     adj = adjacent((x,y), building.dir)
                     if building.timer <= 0.0 and self.grid[adj[0]][adj[1]]['item'] == None:
-                        print 'Extracted'
                         self.additem(adj, ItemA())
                         building.reset_timer()
 
@@ -196,8 +203,8 @@ class Extractor:
         self.pos = pos
         self.size = (1, 1)
         self.type = 'Extractor'
-        self.timer = 0.0
         self.dir = dir
+        self.reset_timer()
     def reset_timer(self):
         self.timer = random.random() * 10 + 10
     def draw(self):
