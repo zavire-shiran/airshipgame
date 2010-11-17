@@ -104,40 +104,57 @@ def make_grid(size):
 def game2world(pos, size):
     return ((pos[0] / size[0]) * worldsize[0], (pos[1] / size[1]) * worldsize[1])
 
+def world2game(pos, size):
+    return (int(pos[0] * size[0] / worldsize[0]), int(pos[1] * size[1] / worldsize[1]))
+
 class Game(World):
     def __init__(self, previous = None):
-        self.size = (12,9)
+        self.size = (24,18)
         self.gridsize = (1.0 / self.size[0] * worldsize[0], 1.0 / self.size[1] * worldsize[1])
         self.grid = make_grid(self.size)
         self.buildings = []
-        self.money = 0
-        self.addbuilding(Hangar((0,0)))
-        for x in xrange(3, 10):
-            self.addbuilding(Extractor((x,0), 'down'))
-            self.addbuilding(Conveyor((x,1), 'left'))
-            self.addbuilding(Extractor((x,2), 'up'))
-        self.addbuilding(Conveyor((1,3), 'up'))
-        self.addbuilding(Conveyor((1,4), 'up'))
-        self.addbuilding(Extractor((1,5), 'up'))
-        for x in xrange(2, 9):
-            self.addbuilding(Extractor((x,3), 'down'))
-            self.addbuilding(Conveyor((x,4), 'left'))
-            self.addbuilding(Extractor((x,5), 'up'))
-        for y in xrange(3, 8):
-            self.addbuilding(Conveyor((0,y), 'up'))
-        for x in xrange(1, 8):
-            self.addbuilding(Extractor((x,6), 'down'))
-            self.addbuilding(Conveyor((x,7), 'left'))
-            self.addbuilding(Extractor((x,8), 'up'))
+        self.money = 100
+        self.addbuilding(Hangar((11,8)))
+        self.dir = 'left'
+        self.currentbuild = None
     def keydown(self, key):
-        pass
+        if key == pygame.K_w:
+            self.dir = 'up'
+        if key == pygame.K_s:
+            self.dir = 'down'
+        if key == pygame.K_a:
+            self.dir = 'left'
+        if key == pygame.K_d:
+            self.dir = 'right'
+        if key == pygame.K_x:
+            self.currentbuild = None
+        if key == pygame.K_c:
+            self.currentbuild = Conveyor
+        if key == pygame.K_e:
+            self.currentbuild = Extractor
+        if key == pygame.K_f:
+            self.currentbuild = Factory
     def keyup(self,key):
         pass
+    def click(self, pos):
+        gpos = world2game(pos, self.size)
+        x, y = gpos
+        if self.currentbuild:
+            if self.grid[x][y]['building'] == None:
+                self.addbuilding(self.currentbuild(gpos, self.dir))
+        else:
+            if self.grid[x][y]['building'] != None and self.grid[x][y]['building'].type != 'Hangar':
+                self.removebuilding(self.grid[x][y]['building'])
     def addbuilding(self, building):
         self.buildings.append(building)
         for x in xrange(building.size[0]):
             for y in xrange(building.size[1]):
                 self.grid[building.pos[0] + x][building.pos[1] + y]['building'] = building
+    def removebuilding(self, building):
+        self.buildings.remove(building)
+        for x in xrange(building.size[0]):
+            for y in xrange(building.size[1]):
+                self.grid[building.pos[0] + x][building.pos[1] + y]['building'] = None
     def additem(self, pos, item):
         self.grid[pos[0]][pos[1]]['item'] = item
     def draw(self):
@@ -158,19 +175,25 @@ class Game(World):
                     glColor(*self.grid[x][y]['item'].draw())
                     drawsquare(game2world((x + 0.25, y + 0.25), self.size), (self.gridsize[0] * 0.5, self.gridsize[1] * 0.5), None, 2.0)
         glColor(0.1, 0.8, 0.1)
-        drawtext(game2world((1.,1.), self.size), '$'+str(self.money), 2.0)
+        drawtext(game2world((12.5,9.5), self.size), '$'+str(self.money), 2.0)
     def step(self, dt):
         for x in xrange(self.size[0]):
             for y in xrange(self.size[1]):
                 building = self.grid[x][y]['building']
                 if building and building.type == 'Conveyor' and self.grid[x][y]['item'] != None:
                     building.timer += dt
-                    if building.timer > 1.0:
+                    if building.timer > building.time_limit:
                         adj = adjacent((x,y), building.dir)
                         if self.grid[adj[0]][adj[1]]['item'] == None:
                             self.grid[adj[0]][adj[1]]['item'] = self.grid[x][y]['item']
                             self.grid[x][y]['item'] = None
                             building.timer = 0.0
+                if building and building.type == 'Factory' and self.grid[x][y]['item'] != None:
+                    if building.materials < building.materialsneeded:
+                        building.materials += 1
+                        self.grid[x][y]['item'] = None
+                    if not building.running and building.materials >= building.materialsneeded:
+                        building.startproduction()
                 if building and building.type == 'Hangar' and self.grid[x][y]['item'] != None:
                     self.money += self.grid[x][y]['item'].value
                     self.grid[x][y]['item'] = None
@@ -180,6 +203,16 @@ class Game(World):
                     if building.timer <= 0.0 and self.grid[adj[0]][adj[1]]['item'] == None:
                         self.additem(adj, ItemA())
                         building.reset_timer()
+        for building in self.buildings:
+            if building.type == 'Factory':
+                if building.running:
+                    building.prodtime -= dt
+                    print 'running:', building.prodtime
+                    if building.prodtime <= 0.0 and self.grid[building.output[0]][building.output[1]]['item'] == None:
+                        print 'done'
+                        building.running = False
+                        self.additem(building.output, ItemB())
+
 
 def adjacent((x, y), dir):
     if dir == 'up':
@@ -198,17 +231,31 @@ class ItemA:
     def draw(self):
         return (0.1, 0.1, 0.8, 1.0)
 
+class ItemB:
+    def __init__(self):
+        self.value = 5
+    def draw(self):
+        return (0.1, 0.8, 0.1, 1.0)
+
 class Extractor:
     def __init__(self, pos, dir):
         self.pos = pos
         self.size = (1, 1)
         self.type = 'Extractor'
         self.dir = dir
+        if dir == 'left':
+            self.texture = media.loadtexture('leftextractor.png')
+        if dir == 'right':
+            self.texture = media.loadtexture('rightextractor.png')
+        if dir == 'up':
+            self.texture = media.loadtexture('upextractor.png')
+        if dir == 'down':
+            self.texture = media.loadtexture('downextractor.png')
         self.reset_timer()
     def reset_timer(self):
         self.timer = random.random() * 10 + 10
     def draw(self):
-        return self.pos, self.size, (0.3, 0.3, 0.3, 1.0), None
+        return self.pos, self.size, (0.3, 0.3, 0.3, 1.0), self.texture
 
 class Hangar:
     def __init__(self, pos):
@@ -232,6 +279,38 @@ class Conveyor:
         if dir == 'down':
             self.texture = media.loadtexture('downconvey.png')
         self.timer = 0.0
+        self.time_limit = 1.0
         self.type = 'Conveyor'
     def draw(self):
         return self.pos, self.size, (1.0, 1.0, 1.0, 1.0), self.texture
+
+class Factory:
+    def __init__(self, pos, dir):
+        self.dir = dir
+        self.pos = pos
+        self.size = (3,3)
+        if dir == 'left':
+            self.texture = media.loadtexture('leftextractor.png')
+            self.output = (pos[0]-1, pos[1]+1)
+        if dir == 'right':
+            self.texture = media.loadtexture('rightextractor.png')
+            self.output = (pos[0]+3, pos[1]+1)
+        if dir == 'up':
+            self.texture = media.loadtexture('upextractor.png')
+            self.output = (pos[0]+1, pos[1]-1)
+        if dir == 'down':
+            self.texture = media.loadtexture('downextractor.png')
+            self.output = (pos[0]+1, pos[1]+3)
+        self.type = 'Factory'
+        self.materials = 0
+        self.materialsneeded = 2
+        self.running = False
+        self.prodtime = 0.0
+        self.runtime = 1.0
+    def startproduction(self):
+        self.materials -= self.materialsneeded
+        self.running = True
+        self.prodtime = self.runtime
+        print 'running'
+    def draw(self):
+        return self.pos, self.size, (0.5, 0.5, 1.0, 1.0), self.texture
