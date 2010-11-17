@@ -118,6 +118,7 @@ class Game(World):
         self.addbuilding(Conveyor((9, 3), 'right'))
         self.addbuilding(Conveyor((9, 2), 'down'))
         self.additem((9, 2), ItemA())
+        self.additem((9, 3), ItemA())
     def keydown(self, key):
         pass
     def keyup(self,key):
