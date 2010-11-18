@@ -146,10 +146,18 @@ class Game(World):
             if self.grid[x][y]['building'] != None and self.grid[x][y]['building'].type != 'Hangar':
                 self.removebuilding(self.grid[x][y]['building'])
     def addbuilding(self, building):
+        if not self.buildingfitp(building):
+            return
         self.buildings.append(building)
         for x in xrange(building.size[0]):
             for y in xrange(building.size[1]):
                 self.grid[building.pos[0] + x][building.pos[1] + y]['building'] = building
+    def buildingfitp(self, building):
+        for x in xrange(building.size[0]):
+            for y in xrange(building.size[1]):
+                if self.grid[building.pos[0] + x][building.pos[1] + y]['building'] != None:
+                    return False
+        return True
     def removebuilding(self, building):
         self.buildings.remove(building)
         for x in xrange(building.size[0]):
@@ -277,7 +285,7 @@ class Conveyor:
         if dir == 'down':
             self.texture = media.loadtexture('downconvey.png')
         self.timer = 0.0
-        self.time_limit = 1.0
+        self.time_limit = 0.2
         self.type = 'Conveyor'
     def draw(self):
         return self.pos, self.size, (1.0, 1.0, 1.0, 1.0), self.texture
