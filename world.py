@@ -118,6 +118,7 @@ class Game(World):
         self.currentbuild = None
         self.defaultlayout()
     def defaultlayout(self):
+        self.money = 0
         self.grid = make_grid(self.size)
         self.removeallbuildings()
         self.addbuilding(Hangar((11,8)))
@@ -223,12 +224,12 @@ class Game(World):
         self.addbuilding(Conveyor((12,7), 'down'))
         for x in xrange(0,11):
             self.addbuilding(Conveyor((x,4), 'right'))
-            if x < 8:
+            if x < 7:
                 self.addbuilding(Extractor((x,5), 'up'))
                 self.addbuilding(Extractor((x,3), 'down'))
         for x in xrange(14,24):
             self.addbuilding(Conveyor((x,4), 'left'))
-            if x > 15:
+            if x > 17:
                 self.addbuilding(Extractor((x,5), 'up'))
                 self.addbuilding(Extractor((x,3), 'down'))
 
@@ -236,12 +237,12 @@ class Game(World):
         self.addbuilding(Conveyor((12,11), 'up'))
         for x in xrange(0,11):
             self.addbuilding(Conveyor((x,14), 'right'))
-            if x < 8:
+            if x < 7:
                 self.addbuilding(Extractor((x,15), 'up'))
                 self.addbuilding(Extractor((x,13), 'down'))
         for x in xrange(14,24):
             self.addbuilding(Conveyor((x,14), 'left'))
-            if x > 15:
+            if x > 17:
                 self.addbuilding(Extractor((x,15), 'up'))
                 self.addbuilding(Extractor((x,13), 'down'))
 
@@ -294,6 +295,8 @@ class Game(World):
             self.layout2()
         if key == pygame.K_F4:
             self.layout3()
+        if key == pygame.K_F9:
+            self.defaultlayout()
     def keyup(self,key):
         pass
     def click(self, pos):
@@ -405,7 +408,7 @@ class ItemA:
 
 class ItemB:
     def __init__(self):
-        self.value = 5
+        self.value = 4
     def draw(self):
         return (0.1, 0.8, 0.1, 1.0)
 
