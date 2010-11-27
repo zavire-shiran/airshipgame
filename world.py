@@ -287,6 +287,8 @@ class Game(World):
             self.currentbuild = Extractor
         if key == pygame.K_f:
             self.currentbuild = Factory
+        if key == pygame.K_z:
+            self.currentbuild = 'select'
         if key == pygame.K_l:
             self.dumpbuildings()
         if key == pygame.K_F2:
@@ -302,7 +304,10 @@ class Game(World):
     def click(self, pos):
         gpos = world2game(pos, self.size)
         x, y = gpos
-        if self.currentbuild:
+        if self.currentbuild == 'select':
+            if self.grid[x][y]['building']:
+                self.grid[x][y]['building'].select()
+        elif self.currentbuild:
             if self.grid[x][y]['building'] == None:
                 self.addbuilding(self.currentbuild(gpos, self.dir))
         else:
@@ -354,14 +359,18 @@ class Game(World):
         glColor(0.1, 0.8, 0.1)
         drawtext(game2world((12.5,9.5), self.size), '$'+str(self.money), 2.0)
     def step(self, dt):
-        for x in xrange(self.size[0]):
-            for y in xrange(self.size[1]):
+#        for x in xrange(self.size[0]):
+#            for y in xrange(self.size[1]):
+        li = [(x,y) for x in xrange(self.size[0]) for y in xrange(self.size[1])]
+        random.shuffle(li)
+        for x, y in li:
                 building = self.grid[x][y]['building']
                 if building and building.type == 'Conveyor' and self.grid[x][y]['item'] != None:
                     building.timer += dt
                     if building.timer > building.time_limit:
                         adj = adjacent((x,y), building.dir)
                         if self.grid[adj[0]][adj[1]]['item'] == None:
+                            self.grid[x][y]['item'].resetdecay()
                             self.grid[adj[0]][adj[1]]['item'] = self.grid[x][y]['item']
                             self.grid[x][y]['item'] = None
                             building.timer = 0.0
@@ -378,15 +387,19 @@ class Game(World):
                     building.timer -= dt
                     adj = adjacent((x,y), building.dir)
                     if building.timer <= 0.0 and self.grid[adj[0]][adj[1]]['item'] == None:
-                        self.additem(adj, ItemA())
+                        self.additem(adj, building.nextproduce())
                         building.reset_timer()
+                if self.grid[x][y]['item']:
+                    self.grid[x][y]['item'].step(dt)
+                    if self.grid[x][y]['item'].decay <= 0.0:
+                        self.grid[x][y]['item'] = None
         for building in self.buildings:
             if building.type == 'Factory':
                 if building.running:
                     building.prodtime -= dt
                     if building.prodtime <= 0.0 and self.grid[building.output[0]][building.output[1]]['item'] == None:
                         building.running = False
-                        self.additem(building.output, ItemB())
+                        self.additem(building.output, ItemAB())
 
 
 def adjacent((x, y), dir):
@@ -400,17 +413,49 @@ def adjacent((x, y), dir):
         return (x+1, y)
     return (x, y)
 
-class ItemA:
+class Item:
+    def resetdecay(self):
+        self.decay = 1.0
+
+class ItemA(Item):
     def __init__(self):
         self.value = 1
+        self.decay = 1.0
+        self.decaytime = 10.0
+    def step(self, dt):
+        self.decay -= dt/self.decaytime
     def draw(self):
-        return (0.1, 0.1, 0.8, 1.0)
+        return (0.1, 0.1, 0.8, self.decay + 0.1)
 
-class ItemB:
+class ItemB(Item):
+    def __init__(self):
+        self.value = 1
+        self.decay = 1.0
+        self.decaytime = 10.0
+    def step(self, dt):
+        self.decay -= dt/self.decaytime
+    def draw(self):
+        return (0.1, 0.8, 0.1, self.decay + 0.1)
+
+class ItemC(Item):
+    def __init__(self):
+        self.value = 1
+        self.decay = 1.0
+        self.decaytime = 10.0
+    def step(self, dt):
+        self.decay -= dt/self.decaytime
+    def draw(self):
+        return (0.8, 0.1, 0.1, self.decay + 0.1)
+
+class ItemAB(Item):
     def __init__(self):
         self.value = 4
+        self.decaytime = 10.0
+        self.decay = 1.0
+    def step(self, dt):
+        self.decay -= dt/self.decaytime
     def draw(self):
-        return (0.1, 0.8, 0.1, 1.0)
+        return (0.1, 0.8, 0.8, self.decay + 0.1)
 
 class Extractor:
     def __init__(self, pos, dir):
@@ -426,17 +471,34 @@ class Extractor:
             self.texture = media.loadtexture('upextractor.png')
         if dir == 'down':
             self.texture = media.loadtexture('downextractor.png')
+        self.nextproduce = ItemA
         self.reset_timer()
     def reset_timer(self):
         self.timer = random.random() * 10 + 10
+        nextproduce = random.random()
+    def select(self):
+        self.reset_timer()
+        if self.nextproduce == ItemA:
+            self.nextproduce = ItemB
+        elif self.nextproduce == ItemB:
+            self.nextproduce = ItemC
+        elif self.nextproduce == ItemC:
+            self.nextproduce = ItemA
     def draw(self):
-        return self.pos, self.size, (0.3, 0.3, 0.3, 1.0), self.texture
+        if self.nextproduce == ItemA:
+            return self.pos, self.size, (0.3, 0.3, 0.5, 1.0), self.texture
+        if self.nextproduce == ItemB:
+            return self.pos, self.size, (0.3, 0.5, 0.3, 1.0), self.texture
+        if self.nextproduce == ItemC:
+            return self.pos, self.size, (0.5, 0.3, 0.3, 1.0), self.texture
 
 class Hangar:
     def __init__(self, pos):
         self.pos = pos
         self.size = (3, 3)
         self.type = 'Hangar'
+    def select(self):
+        pass
     def draw(self):
         return self.pos, self.size, (0.6, 0.3, 0.0, 1.0), None
 
@@ -456,6 +518,8 @@ class Conveyor:
         self.timer = 0.0
         self.time_limit = 0.5
         self.type = 'Conveyor'
+    def select(self):
+        pass
     def draw(self):
         return self.pos, self.size, (1.0, 1.0, 1.0, 1.0), self.texture
 
@@ -481,10 +545,12 @@ class Factory:
         self.materialsneeded = 2
         self.running = False
         self.prodtime = 0.0
-        self.runtime = 1.0
+        self.runtime = 0.5
+    def select(self):
+        pass
     def startproduction(self):
         self.materials -= self.materialsneeded
         self.running = True
-        self.prodtime = self.runtime
+        self.prodtime = random.random() + self.runtime
     def draw(self):
         return self.pos, self.size, (0.5, 0.5, 1.0, 1.0), self.texture
