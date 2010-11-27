@@ -113,12 +113,13 @@ class Game(World):
         self.size = (24,18)
         self.gridsize = (1.0 / self.size[0] * worldsize[0], 1.0 / self.size[1] * worldsize[1])
         self.buildings = []
-        self.money = 100
         self.dir = 'left'
         self.currentbuild = None
         self.defaultlayout()
     def defaultlayout(self):
         self.money = 0
+        self.moneyhist = [self.money]
+        self.timeuntilmoneysave = 1.0
         self.grid = make_grid(self.size)
         self.removeallbuildings()
         self.addbuilding(Hangar((11,8)))
@@ -357,8 +358,15 @@ class Game(World):
                     glColor(*self.grid[x][y]['item'].draw())
                     drawsquare(game2world((x + 0.25, y + 0.25), self.size), (self.gridsize[0] * 0.5, self.gridsize[1] * 0.5), None, 2.0)
         glColor(0.1, 0.8, 0.1)
-        drawtext(game2world((12.5,9.5), self.size), '$'+str(self.money), 2.0)
+        drawtext(game2world((12.5,8.5), self.size), '$'+str(self.money), 2.0)
+        drawtext(game2world((12.5,9.5), self.size), '$'+str((self.money - self.moneyhist[0]) / 30.0)[:4] + '/sec', 2.0)
     def step(self, dt):
+        self.timeuntilmoneysave -= dt
+        if self.timeuntilmoneysave <= 0.0:
+            self.moneyhist.append(self.money)
+            self.timeuntilmoneysave += 1.0
+            if len(self.moneyhist) > 30:
+                del self.moneyhist[0]
         li = [(x,y) for x in xrange(self.size[0]) for y in xrange(self.size[1])]
         random.shuffle(li)
         for x, y in li:
