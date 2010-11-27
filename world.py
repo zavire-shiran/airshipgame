@@ -359,8 +359,6 @@ class Game(World):
         glColor(0.1, 0.8, 0.1)
         drawtext(game2world((12.5,9.5), self.size), '$'+str(self.money), 2.0)
     def step(self, dt):
-#        for x in xrange(self.size[0]):
-#            for y in xrange(self.size[1]):
         li = [(x,y) for x in xrange(self.size[0]) for y in xrange(self.size[1])]
         random.shuffle(li)
         for x, y in li:
