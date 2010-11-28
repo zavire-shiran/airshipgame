@@ -359,7 +359,7 @@ class Game(World):
                     drawsquare(game2world((x + 0.25, y + 0.25), self.size), (self.gridsize[0] * 0.5, self.gridsize[1] * 0.5), None, 2.0)
         glColor(0.1, 0.8, 0.1)
         drawtext(game2world((12.5,8.5), self.size), '$'+str(self.money), 2.0)
-        drawtext(game2world((12.5,9.5), self.size), '$'+str((self.money - self.moneyhist[0]) / 30.0)[:4] + '/sec', 2.0)
+        drawtext(game2world((12.5,9.5), self.size), '$%.2f/sec' % ((self.money - self.moneyhist[0]) / 30.0), 2.0)
     def step(self, dt):
         self.timeuntilmoneysave -= dt
         if self.timeuntilmoneysave <= 0.0:
@@ -421,7 +421,7 @@ def adjacent((x, y), dir):
 
 class Item:
     def resetdecay(self):
-        self.decay = 1.0
+        self.decay = min(1.0, self.decay + 0.2)
 
 class ItemA(Item):
     def __init__(self):
