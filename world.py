@@ -286,8 +286,12 @@ class Game(World):
             self.currentbuild = Conveyor
         if key == pygame.K_e:
             self.currentbuild = Extractor
+        if key == pygame.K_q:
+            self.currentbuild = MultiExtractor
         if key == pygame.K_f:
             self.currentbuild = Factory
+        if key == pygame.K_r:
+            self.currentbuild = Overflow
         if key == pygame.K_z:
             self.currentbuild = 'select'
         if key == pygame.K_l:
@@ -346,12 +350,7 @@ class Game(World):
             for y in xrange(self.size[1]):
                 drawsquare(game2world((float(x),float(y)), self.size), (self.gridsize[0] * 0.98, self.gridsize[1] * 0.98))
         for building in self.buildings:
-            pos, size, color, texture = building.draw()
-            pos = pos[0] + 0.1, pos[1] + 0.1
-            size = size[0] - 0.2, size[1] - 0.2
-            glColor(*color)
-            drawsquare(game2world(pos, self.size), 
-                       (size[0] * self.gridsize[0], size[1] * self.gridsize[1]), texture, 1.0)
+            building.draw(self)
         for x in xrange(self.size[0]):
             for y in xrange(self.size[1]):
                 if self.grid[x][y]['item']:
@@ -378,6 +377,21 @@ class Game(World):
                         if self.grid[adj[0]][adj[1]]['item'] == None:
                             self.grid[x][y]['item'].resetdecay()
                             self.grid[adj[0]][adj[1]]['item'] = self.grid[x][y]['item']
+                            self.grid[x][y]['item'] = None
+                            building.timer = 0.0
+                if building and building.type == 'Overflow' and self.grid[x][y]['item'] != None:
+                    building.timer += dt
+                    if building.timer > building.time_limit:
+                        adj = adjacent((x,y), building.dir)
+                        oadj = adjacentrel((x,y), building.dir, building.overflowdir)
+                        if self.grid[adj[0]][adj[1]]['item'] == None:
+                            self.grid[x][y]['item'].resetdecay()
+                            self.grid[adj[0]][adj[1]]['item'] = self.grid[x][y]['item']
+                            self.grid[x][y]['item'] = None
+                            building.timer = 0.0
+                        elif self.grid[oadj[0]][oadj[1]]['item'] == None:
+                            self.grid[x][y]['item'].resetdecay()
+                            self.grid[oadj[0]][oadj[1]]['item'] = self.grid[x][y]['item']
                             self.grid[x][y]['item'] = None
                             building.timer = 0.0
                 if building and building.type == 'Factory' and self.grid[x][y]['item'] != None:
@@ -419,6 +433,28 @@ def adjacent((x, y), dir):
     if dir == 'right':
         return (x+1, y)
     return (x, y)
+
+def adjacentrel(pos, dir, rel):
+    if dir == 'up':
+        if rel == 'left':
+            return adjacent(pos, 'left')
+        if rel == 'right':
+            return adjacent(pos, 'right')
+    if dir == 'down':
+        if rel == 'left':
+            return adjacent(pos, 'right')
+        if rel == 'right':
+            return adjacent(pos, 'left')
+    if dir == 'left':
+        if rel == 'left':
+            return adjacent(pos, 'down')
+        if rel == 'right':
+            return adjacent(pos, 'up')
+    if dir == 'right':
+        if rel == 'left':
+            return adjacent(pos, 'up')
+        if rel == 'right':
+            return adjacent(pos, 'down')
 
 class Item:
     def resetdecay(self):
@@ -518,13 +554,18 @@ class Extractor:
             self.nextproduce = ItemC
         elif self.nextproduce == ItemC:
             self.nextproduce = ItemA
-    def draw(self):
+    def draw(self, world):
         if self.nextproduce == ItemA:
-            return self.pos, self.size, (0.3, 0.3, 0.5, 1.0), self.texture
+            pos, size, color, texture = self.pos, self.size, (0.3, 0.3, 0.5, 1.0), self.texture
         if self.nextproduce == ItemB:
-            return self.pos, self.size, (0.3, 0.5, 0.3, 1.0), self.texture
+            pos, size, color, texture = self.pos, self.size, (0.3, 0.5, 0.3, 1.0), self.texture
         if self.nextproduce == ItemC:
-            return self.pos, self.size, (0.5, 0.3, 0.3, 1.0), self.texture
+            pos, size, color, texture = self.pos, self.size, (0.5, 0.3, 0.3, 1.0), self.texture
+        pos = pos[0] + 0.1, pos[1] + 0.1
+        size = size[0] - 0.2, size[1] - 0.2
+        glColor(*color)
+        drawsquare(game2world(pos, world.size), 
+                   (size[0] * world.gridsize[0], size[1] * world.gridsize[1]), texture, 1.0)
 
 class MultiExtractor:
     def __init__(self, pos, dir):
@@ -546,14 +587,19 @@ class MultiExtractor:
         self.nextproduce = randomitem()
     def select(self):
         pass
-    def draw(self):
+    def draw(self, world):
+        pos, size, color, texture = self.pos, self.size, (0.3, 0.3, 0.3, 1.0), self.texture
         if self.nextproduce == ItemA:
-            return self.pos, self.size, (0.1, 0.1, 0.8, 1.0), self.texture
+            pos, size, color, texture = self.pos, self.size, (0.1, 0.1, 0.8, 1.0), self.texture
         if self.nextproduce == ItemB:
-            return self.pos, self.size, (0.1, 0.8, 0.1, 1.0), self.texture
+            pos, size, color, texture = self.pos, self.size, (0.1, 0.8, 0.1, 1.0), self.texture
         if self.nextproduce == ItemC:
-            return self.pos, self.size, (0.8, 0.1, 0.1, 1.0), self.texture
-        return self.pos, self.size, (0.3, 0.3, 0.3, 1.0), self.texture
+            pos, size, color, texture = self.pos, self.size, (0.8, 0.1, 0.1, 1.0), self.texture
+        pos = pos[0] + 0.1, pos[1] + 0.1
+        size = size[0] - 0.2, size[1] - 0.2
+        glColor(*color)
+        drawsquare(game2world(pos, world.size), 
+                   (size[0] * world.gridsize[0], size[1] * world.gridsize[1]), texture, 1.0)
 
 class Hangar:
     def __init__(self, pos):
@@ -562,8 +608,13 @@ class Hangar:
         self.type = 'Hangar'
     def select(self):
         pass
-    def draw(self):
-        return self.pos, self.size, (0.6, 0.3, 0.0, 1.0), None
+    def draw(self, world):
+        pos, size, color, texture = self.pos, self.size, (0.6, 0.3, 0.0, 1.0), None
+        pos = pos[0] + 0.1, pos[1] + 0.1
+        size = size[0] - 0.2, size[1] - 0.2
+        glColor(*color)
+        drawsquare(game2world(pos, world.size), 
+                   (size[0] * world.gridsize[0], size[1] * world.gridsize[1]), texture, 1.0)
 
 class Conveyor:
     def __init__(self, pos, dir):
@@ -583,8 +634,67 @@ class Conveyor:
         self.type = 'Conveyor'
     def select(self):
         pass
-    def draw(self):
-        return self.pos, self.size, (1.0, 1.0, 1.0, 1.0), self.texture
+    def draw(self, world):
+        pos, size, color, texture = self.pos, self.size, (1.0, 1.0, 1.0, 1.0), self.texture
+        pos = pos[0] + 0.1, pos[1] + 0.1
+        size = size[0] - 0.2, size[1] - 0.2
+        glColor(*color)
+        drawsquare(game2world(pos, world.size), 
+                   (size[0] * world.gridsize[0], size[1] * world.gridsize[1]), texture, 1.0)
+
+class Overflow:
+    def __init__(self, pos, dir):
+        self.dir = dir
+        self.pos = pos
+        self.size = (1,1)
+        if dir == 'left':
+            self.texture = media.loadtexture('leftconvey.png')
+            self.overflowleft = media.loadtexture('downextractor.png')
+            self.overflowright = media.loadtexture('upextractor.png')
+        if dir == 'right':
+            self.texture = media.loadtexture('rightconvey.png')
+            self.overflowleft = media.loadtexture('upextractor.png')
+            self.overflowright = media.loadtexture('downextractor.png')
+        if dir == 'up':
+            self.texture = media.loadtexture('upconvey.png')
+            self.overflowleft = media.loadtexture('leftextractor.png')
+            self.overflowright = media.loadtexture('rightextractor.png')
+        if dir == 'down':
+            self.texture = media.loadtexture('downconvey.png')
+            self.overflowleft = media.loadtexture('rightextractor.png')
+            self.overflowright = media.loadtexture('leftextractor.png')
+        self.timer = 0.0
+        self.time_limit = 0.5
+        self.type = 'Overflow'
+        self.overflowdir = 'left'
+    def select(self):
+        if self.overflowdir == 'left':
+            self.overflowdir = 'right'
+        else:
+            self.overflowdir = 'left'
+    def draw(self, world):
+        pos, size, color, texture = self.pos, self.size, (1.0, 1.0, 1.0, 1.0), self.texture
+        pos = pos[0] + 0.1, pos[1] + 0.1
+        size = size[0] - 0.2, size[1] - 0.2
+        glColor(*color)
+        drawsquare(game2world(pos, world.size), 
+                   (size[0] * world.gridsize[0], size[1] * world.gridsize[1]), texture, 1.0)
+        if self.overflowdir == 'left':
+            pos, size, color, texture = self.pos, self.size, (1.0, 1.0, 1.0, 1.0), self.overflowleft
+        if self.overflowdir == 'right':
+            pos, size, color, texture = self.pos, self.size, (1.0, 1.0, 1.0, 1.0), self.overflowright
+        if self.dir == 'left':
+            pos = pos[0] + 0.5, pos[1] + 0.3
+        elif self.dir == 'right':
+            pos = pos[0] + 0.1, pos[1] + 0.3
+        elif self.dir == 'up':
+            pos = pos[0] + 0.3, pos[1] + 0.5
+        elif self.dir == 'down':
+            pos = pos[0] + 0.3, pos[1] + 0.1
+        size = size[0] - 0.6, size[1] - 0.6
+        glColor(*color)
+        drawsquare(game2world(pos, world.size), 
+                   (size[0] * world.gridsize[0], size[1] * world.gridsize[1]), texture, 1.1)
 
 class Factory:
     def __init__(self, pos, dir):
@@ -625,5 +735,10 @@ class Factory:
         self.running = True
         self.prodtime = random.random() + self.runtime
         self.lastinput = []
-    def draw(self):
-        return self.pos, self.size, (0.5, 0.5, 1.0, 1.0), self.texture
+    def draw(self, world):
+        pos, size, color, texture = self.pos, self.size, (0.5, 0.5, 1.0, 1.0), self.texture
+        pos = pos[0] + 0.1, pos[1] + 0.1
+        size = size[0] - 0.2, size[1] - 0.2
+        glColor(*color)
+        drawsquare(game2world(pos, world.size), 
+                   (size[0] * world.gridsize[0], size[1] * world.gridsize[1]), texture, 1.0)
