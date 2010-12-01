@@ -146,16 +146,16 @@ class Game(World):
         for x in xrange(13, 24):
             self.addbuilding(Conveyor((x, 9), 'left'))
         for x in itertools.chain(xrange(0,7), xrange(18,24)):
-            self.addbuilding(Extractor((x,8), 'down'))
-            self.addbuilding(Extractor((x,10), 'up'))
+            self.addbuilding(MultiExtractor((x,8), 'down'))
+            self.addbuilding(MultiExtractor((x,10), 'up'))
 
         for y in xrange(0, 9):
             self.addbuilding(Conveyor((12,y), 'down'))
         for y in xrange(10, 18):
             self.addbuilding(Conveyor((12,y), 'up'))
         for y in itertools.chain(xrange(0, 7), xrange(12,18)):
-            self.addbuilding(Extractor((11,y), 'right'))
-            self.addbuilding(Extractor((13,y), 'left'))
+            self.addbuilding(MultiExtractor((11,y), 'right'))
+            self.addbuilding(MultiExtractor((13,y), 'left'))
 
         for x in xrange(7,11):
             self.addbuilding(Conveyor((x,8), 'right'))
@@ -166,12 +166,12 @@ class Game(World):
         self.addbuilding(Conveyor((6,11),'right'))
         for y in xrange(0,9):
             self.addbuilding(Conveyor((6,y), 'down'))
-            self.addbuilding(Extractor((5,y), 'right'))
-            self.addbuilding(Extractor((7,y), 'left'))
+            self.addbuilding(MultiExtractor((5,y), 'right'))
+            self.addbuilding(MultiExtractor((7,y), 'left'))
         for y in xrange(9,18):
             self.addbuilding(Conveyor((6,y), 'up'))
-            self.addbuilding(Extractor((5,y), 'right'))
-            self.addbuilding(Extractor((7,y), 'left'))
+            self.addbuilding(MultiExtractor((5,y), 'right'))
+            self.addbuilding(MultiExtractor((7,y), 'left'))
 
         for x in xrange(13,18):
             self.addbuilding(Conveyor((x,8), 'left'))
@@ -182,12 +182,12 @@ class Game(World):
         self.addbuilding(Conveyor((18,11),'left'))
         for y in xrange(0,9):
             self.addbuilding(Conveyor((18,y), 'down'))
-            self.addbuilding(Extractor((17,y), 'right'))
-            self.addbuilding(Extractor((19,y), 'left'))
+            self.addbuilding(MultiExtractor((17,y), 'right'))
+            self.addbuilding(MultiExtractor((19,y), 'left'))
         for y in xrange(9,18):
             self.addbuilding(Conveyor((18,y), 'up'))
-            self.addbuilding(Extractor((17,y), 'right'))
-            self.addbuilding(Extractor((19,y), 'left'))
+            self.addbuilding(MultiExtractor((17,y), 'right'))
+            self.addbuilding(MultiExtractor((19,y), 'left'))
             
         self.addbuilding(Conveyor((11,7),'down'))
         self.addbuilding(Conveyor((10,7),'right'))
@@ -213,11 +213,11 @@ class Game(World):
             self.addbuilding(Conveyor((15,y), 'up'))
 
         for y in xrange(0,18):
-            self.addbuilding(Extractor((8,y), 'right'))
-            self.addbuilding(Extractor((10,y), 'left'))
+            self.addbuilding(MultiExtractor((8,y), 'right'))
+            self.addbuilding(MultiExtractor((10,y), 'left'))
         for y in xrange(0,18):
-            self.addbuilding(Extractor((14,y), 'right'))
-            self.addbuilding(Extractor((16,y), 'left'))
+            self.addbuilding(MultiExtractor((14,y), 'right'))
+            self.addbuilding(MultiExtractor((16,y), 'left'))
 
     def layout3(self):
         self.defaultlayout()
@@ -230,7 +230,7 @@ class Game(World):
                 self.addbuilding(Extractor((x,3), 'down', ItemB))
         for x in xrange(14,24):
             self.addbuilding(Conveyor((x,4), 'left'))
-            if x > 17:
+            if x > 16:
                 self.addbuilding(Extractor((x,5), 'up'))
                 self.addbuilding(Extractor((x,3), 'down'))
 
@@ -243,7 +243,7 @@ class Game(World):
                 self.addbuilding(Extractor((x,13), 'down', ItemC))
         for x in xrange(14,24):
             self.addbuilding(Conveyor((x,14), 'left'))
-            if x > 17:
+            if x > 16:
                 self.addbuilding(Extractor((x,15), 'up'))
                 self.addbuilding(Extractor((x,13), 'down'))
 
@@ -263,13 +263,13 @@ class Game(World):
         self.addbuilding(Conveyor((14,9), 'left'))
         self.addbuilding(Conveyor((17,7), 'down'))
         self.addbuilding(Conveyor((17,11), 'up'))
-        for x in xrange(18,24):
-            self.addbuilding(Extractor((x,6), 'down'))
+        for x in xrange(17,24):
+            self.addbuilding(MultiExtractor((x,6), 'down'))
             self.addbuilding(Conveyor((x,7), 'left'))
-            self.addbuilding(Extractor((x,8), 'up'))
-            self.addbuilding(Extractor((x,10), 'down'))
+            self.addbuilding(MultiExtractor((x,8), 'up'))
+            self.addbuilding(MultiExtractor((x,10), 'down'))
             self.addbuilding(Conveyor((x,11), 'left'))
-            self.addbuilding(Extractor((x,12), 'up'))
+            self.addbuilding(MultiExtractor((x,12), 'up'))
 
     def keydown(self, key):
         if key == pygame.K_w:
@@ -390,7 +390,7 @@ class Game(World):
                 if building and building.type == 'Hangar' and self.grid[x][y]['item'] != None:
                     self.money += self.grid[x][y]['item'].value
                     self.grid[x][y]['item'] = None
-                if building and building.type == 'Extractor':
+                if building and (building.type == 'Extractor' or building.type == 'MultiExtractor'):
                     building.timer -= dt
                     adj = adjacent((x,y), building.dir)
                     if building.timer <= 0.0 and self.grid[adj[0]][adj[1]]['item'] == None:
@@ -453,6 +453,14 @@ class ItemC(Item):
         self.decay -= dt/self.decaytime
     def draw(self):
         return (0.8, 0.1, 0.1, self.decay + 0.1)
+
+def randomitem():
+    r = random.random()
+    if r < 0.33:
+        return ItemA
+    if r < 0.66:
+        return ItemB
+    return ItemC
 
 class ItemAB(Item):
     def __init__(self):
@@ -517,6 +525,35 @@ class Extractor:
             return self.pos, self.size, (0.3, 0.5, 0.3, 1.0), self.texture
         if self.nextproduce == ItemC:
             return self.pos, self.size, (0.5, 0.3, 0.3, 1.0), self.texture
+
+class MultiExtractor:
+    def __init__(self, pos, dir):
+        self.pos = pos
+        self.size = (1,1)
+        self.type = 'MultiExtractor'
+        self.dir = dir
+        if dir == 'left':
+            self.texture = media.loadtexture('leftextractor.png')
+        if dir == 'right':
+            self.texture = media.loadtexture('rightextractor.png')
+        if dir == 'up':
+            self.texture = media.loadtexture('upextractor.png')
+        if dir == 'down':
+            self.texture = media.loadtexture('downextractor.png')
+        self.reset_timer()
+    def reset_timer(self):
+        self.timer = random.random() * 10 + 7
+        self.nextproduce = randomitem()
+    def select(self):
+        pass
+    def draw(self):
+        if self.nextproduce == ItemA:
+            return self.pos, self.size, (0.1, 0.1, 0.8, 1.0), self.texture
+        if self.nextproduce == ItemB:
+            return self.pos, self.size, (0.1, 0.8, 0.1, 1.0), self.texture
+        if self.nextproduce == ItemC:
+            return self.pos, self.size, (0.8, 0.1, 0.1, 1.0), self.texture
+        return self.pos, self.size, (0.3, 0.3, 0.3, 1.0), self.texture
 
 class Hangar:
     def __init__(self, pos):
