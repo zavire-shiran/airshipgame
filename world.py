@@ -226,8 +226,8 @@ class Game(World):
         for x in xrange(0,11):
             self.addbuilding(Conveyor((x,4), 'right'))
             if x < 7:
-                self.addbuilding(Extractor((x,5), 'up'))
-                self.addbuilding(Extractor((x,3), 'down'))
+                self.addbuilding(Extractor((x,5), 'up', ItemB))
+                self.addbuilding(Extractor((x,3), 'down', ItemB))
         for x in xrange(14,24):
             self.addbuilding(Conveyor((x,4), 'left'))
             if x > 17:
@@ -239,8 +239,8 @@ class Game(World):
         for x in xrange(0,11):
             self.addbuilding(Conveyor((x,14), 'right'))
             if x < 7:
-                self.addbuilding(Extractor((x,15), 'up'))
-                self.addbuilding(Extractor((x,13), 'down'))
+                self.addbuilding(Extractor((x,15), 'up', ItemC))
+                self.addbuilding(Extractor((x,13), 'down', ItemC))
         for x in xrange(14,24):
             self.addbuilding(Conveyor((x,14), 'left'))
             if x > 17:
@@ -252,12 +252,12 @@ class Game(World):
         self.addbuilding(Conveyor((7,7), 'down'))
         self.addbuilding(Conveyor((7,11), 'up'))
         for x in xrange(0,7):
-            self.addbuilding(Extractor((x,6), 'down'))
+            self.addbuilding(Extractor((x,6), 'down', ItemB))
             self.addbuilding(Conveyor((x,7), 'right'))
-            self.addbuilding(Extractor((x,8), 'up'))
-            self.addbuilding(Extractor((x,10), 'down'))
+            self.addbuilding(Extractor((x,8), 'up', ItemB))
+            self.addbuilding(Extractor((x,10), 'down', ItemC))
             self.addbuilding(Conveyor((x,11), 'right'))
-            self.addbuilding(Extractor((x,12), 'up'))
+            self.addbuilding(Extractor((x,12), 'up', ItemC))
 
         self.addbuilding(Factory((15,8), 'left'))
         self.addbuilding(Conveyor((14,9), 'left'))
@@ -381,8 +381,9 @@ class Game(World):
                             self.grid[x][y]['item'] = None
                             building.timer = 0.0
                 if building and building.type == 'Factory' and self.grid[x][y]['item'] != None:
-                    if building.materials < building.materialsneeded:
+                    if building.materials < building.materialsneeded and self.grid[x][y]['item'].__class__ not in building.lastinput:
                         building.materials += 1
+                        building.lastinput.append(self.grid[x][y]['item'].__class__)
                         self.grid[x][y]['item'] = None
                     if not building.running and building.materials >= building.materialsneeded:
                         building.startproduction()
@@ -405,7 +406,7 @@ class Game(World):
                     building.prodtime -= dt
                     if building.prodtime <= 0.0 and self.grid[building.output[0]][building.output[1]]['item'] == None:
                         building.running = False
-                        self.additem(building.output, ItemAB())
+                        self.additem(building.output, building.production())
 
 
 def adjacent((x, y), dir):
@@ -463,8 +464,28 @@ class ItemAB(Item):
     def draw(self):
         return (0.1, 0.8, 0.8, self.decay + 0.1)
 
+class ItemAC(Item):
+    def __init__(self):
+        self.value = 4
+        self.decaytime = 10.0
+        self.decay = 1.0
+    def step(self, dt):
+        self.decay -= dt/self.decaytime
+    def draw(self):
+        return (0.8, 0.1, 0.8, self.decay + 0.1)
+
+class ItemBC(Item):
+    def __init__(self):
+        self.value = 4
+        self.decaytime = 10.0
+        self.decay = 1.0
+    def step(self, dt):
+        self.decay -= dt/self.decaytime
+    def draw(self):
+        return (0.8, 0.8, 0.1, self.decay + 0.1)
+
 class Extractor:
-    def __init__(self, pos, dir):
+    def __init__(self, pos, dir, output = ItemA):
         self.pos = pos
         self.size = (1, 1)
         self.type = 'Extractor'
@@ -477,11 +498,10 @@ class Extractor:
             self.texture = media.loadtexture('upextractor.png')
         if dir == 'down':
             self.texture = media.loadtexture('downextractor.png')
-        self.nextproduce = ItemA
+        self.nextproduce = output
         self.reset_timer()
     def reset_timer(self):
         self.timer = random.random() * 10 + 10
-        nextproduce = random.random()
     def select(self):
         self.reset_timer()
         if self.nextproduce == ItemA:
@@ -547,6 +567,7 @@ class Factory:
             self.texture = media.loadtexture('downextractor.png')
             self.output = (pos[0]+1, pos[1]+3)
         self.type = 'Factory'
+        self.lastinput = []
         self.materials = 0
         self.materialsneeded = 2
         self.running = False
@@ -554,9 +575,18 @@ class Factory:
         self.runtime = 0.5
     def select(self):
         pass
+    def chooseproduction(self):
+        if ItemA in self.lastinput and ItemB in self.lastinput:
+            self.production = ItemAB
+        elif ItemA in self.lastinput and ItemC in self.lastinput:
+            self.production = ItemAC
+        elif ItemB in self.lastinput and ItemC in self.lastinput:
+            self.production = ItemBC
     def startproduction(self):
         self.materials -= self.materialsneeded
+        self.chooseproduction()
         self.running = True
         self.prodtime = random.random() + self.runtime
+        self.lastinput = []
     def draw(self):
         return self.pos, self.size, (0.5, 0.5, 1.0, 1.0), self.texture
