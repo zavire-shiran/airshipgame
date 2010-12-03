@@ -492,9 +492,9 @@ class ItemC(Item):
 
 def randomitem():
     r = random.random()
-    if r < 0.33:
+    if r < 0.3333:
         return ItemA
-    if r < 0.66:
+    if r < 0.6666:
         return ItemB
     return ItemC
 
