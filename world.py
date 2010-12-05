@@ -496,7 +496,7 @@ class Balloon:
         self.pos = pos
         self.size = (1,1)
         self.type = 'Balloon'
-        self.cost = 10.0
+        self.cost = 1.0
         self.timetocost = 10.0
         self.resettimer()
     def resettimer(self):
