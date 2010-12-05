@@ -5,6 +5,7 @@ import texture
 import numpy
 import random
 import itertools
+from collections import defaultdict
 from OpenGL.GL import *
 from OpenGL.arrays import ArrayDatatype as ADT
 
@@ -99,8 +100,11 @@ class Opening(World):
     def draw(self):
         drawsquare((0,0), (4,3), self.splash)
 
+def maketile():
+    return {'walkable':False, 'building':None, 'item':None}
+
 def make_grid(size):
-    return [[{'walkable':False, 'building':None, 'item':None} for y in xrange(size[1])] for x in xrange(size[0])]
+    return defaultdict(maketile)
 
 def game2world(pos, size):
     return ((pos[0] / size[0]) * worldsize[0], (pos[1] / size[1]) * worldsize[1])
@@ -310,32 +314,32 @@ class Game(World):
         gpos = world2game(pos, self.size)
         x, y = gpos
         if self.currentbuild == 'select':
-            if self.grid[x][y]['building']:
-                self.grid[x][y]['building'].select()
+            if self.grid[x, y]['building']:
+                self.grid[x, y]['building'].select()
         elif self.currentbuild:
-            if self.grid[x][y]['building'] == None:
+            if self.grid[x, y]['building'] == None:
                 self.addbuilding(self.currentbuild(gpos, self.dir))
         else:
-            if self.grid[x][y]['building'] != None and self.grid[x][y]['building'].type != 'Hangar':
-                self.removebuilding(self.grid[x][y]['building'])
+            if self.grid[x, y]['building'] != None and self.grid[x, y]['building'].type != 'Hangar':
+                self.removebuilding(self.grid[x, y]['building'])
     def addbuilding(self, building):
         if not self.buildingfitp(building):
             return
         self.buildings.append(building)
         for x in xrange(building.size[0]):
             for y in xrange(building.size[1]):
-                self.grid[building.pos[0] + x][building.pos[1] + y]['building'] = building
+                self.grid[building.pos[0] + x, building.pos[1] + y]['building'] = building
     def buildingfitp(self, building):
         for x in xrange(building.size[0]):
             for y in xrange(building.size[1]):
-                if self.grid[building.pos[0] + x][building.pos[1] + y]['building'] != None:
+                if self.grid[building.pos[0] + x, building.pos[1] + y]['building'] != None:
                     return False
         return True
     def removebuilding(self, building):
         self.buildings.remove(building)
         for x in xrange(building.size[0]):
             for y in xrange(building.size[1]):
-                self.grid[building.pos[0] + x][building.pos[1] + y]['building'] = None
+                self.grid[building.pos[0] + x, building.pos[1] + y]['building'] = None
     def removeallbuildings(self):
         for building in self.buildings[:]:
             self.removebuilding(building)
@@ -343,19 +347,17 @@ class Game(World):
         for building in self.buildings:
             print building.type, building.pos
     def additem(self, pos, item):
-        self.grid[pos[0]][pos[1]]['item'] = item
+        self.grid[pos[0], pos[1]]['item'] = item
     def draw(self):
         glColor(1.0, 1.0, 1.0, 1.0)
-        for x in xrange(self.size[0]):
-            for y in xrange(self.size[1]):
-                drawsquare(game2world((float(x),float(y)), self.size), (self.gridsize[0] * 0.98, self.gridsize[1] * 0.98))
+        for x,y in self.grid.keys():
+            drawsquare(game2world((float(x),float(y)), self.size), (self.gridsize[0] * 0.98, self.gridsize[1] * 0.98))
         for building in self.buildings:
             building.draw(self)
-        for x in xrange(self.size[0]):
-            for y in xrange(self.size[1]):
-                if self.grid[x][y]['item']:
-                    glColor(*self.grid[x][y]['item'].draw())
-                    drawsquare(game2world((x + 0.25, y + 0.25), self.size), (self.gridsize[0] * 0.5, self.gridsize[1] * 0.5), None, 2.0)
+        for x,y in self.grid.keys():
+            if self.grid[x, y]['item']:
+                glColor(*self.grid[x, y]['item'].draw())
+                drawsquare(game2world((x + 0.25, y + 0.25), self.size), (self.gridsize[0] * 0.5, self.gridsize[1] * 0.5), None, 2.0)
         glColor(0.1, 0.8, 0.1)
         drawtext(game2world((12.5,8.5), self.size), '$'+str(self.money), 2.0)
         drawtext(game2world((12.5,9.5), self.size), '$%.2f/sec' % ((self.money - self.moneyhist[0]) / 30.0), 2.0)
@@ -366,59 +368,61 @@ class Game(World):
             self.timeuntilmoneysave += 1.0
             if len(self.moneyhist) > 30:
                 del self.moneyhist[0]
-        li = [(x,y) for x in xrange(self.size[0]) for y in xrange(self.size[1])]
+        li = self.grid.keys()[:]
         random.shuffle(li)
         for x, y in li:
-                building = self.grid[x][y]['building']
-                if building and building.type == 'Conveyor' and self.grid[x][y]['item'] != None:
+                building = self.grid[x, y]['building']
+                if building and building.type == 'Conveyor' and self.grid[x, y]['item'] != None:
                     building.timer += dt
                     if building.timer > building.time_limit:
                         adj = adjacent((x,y), building.dir)
-                        if self.grid[adj[0]][adj[1]]['item'] == None:
-                            self.grid[x][y]['item'].resetdecay()
-                            self.grid[adj[0]][adj[1]]['item'] = self.grid[x][y]['item']
-                            self.grid[x][y]['item'] = None
+                        if self.grid[adj[0], adj[1]]['item'] == None:
+                            self.grid[x, y]['item'].resetdecay()
+                            self.grid[adj[0], adj[1]]['item'] = self.grid[x, y]['item']
+                            self.grid[x, y]['item'] = None
                             building.timer = 0.0
-                if building and building.type == 'Overflow' and self.grid[x][y]['item'] != None:
+                if building and building.type == 'Overflow' and self.grid[x, y]['item'] != None:
                     building.timer += dt
                     if building.timer > building.time_limit:
                         adj = adjacent((x,y), building.dir)
                         oadj = adjacentrel((x,y), building.dir, building.overflowdir)
-                        if self.grid[adj[0]][adj[1]]['item'] == None:
-                            self.grid[x][y]['item'].resetdecay()
-                            self.grid[adj[0]][adj[1]]['item'] = self.grid[x][y]['item']
-                            self.grid[x][y]['item'] = None
+                        if self.grid[adj[0], adj[1]]['item'] == None:
+                            self.grid[x, y]['item'].resetdecay()
+                            self.grid[adj[0], adj[1]]['item'] = self.grid[x, y]['item']
+                            self.grid[x, y]['item'] = None
                             building.timer = 0.0
-                        elif self.grid[oadj[0]][oadj[1]]['item'] == None:
-                            self.grid[x][y]['item'].resetdecay()
-                            self.grid[oadj[0]][oadj[1]]['item'] = self.grid[x][y]['item']
-                            self.grid[x][y]['item'] = None
+                        elif self.grid[oadj[0], oadj[1]]['item'] == None:
+                            self.grid[x, y]['item'].resetdecay()
+                            self.grid[oadj[0], oadj[1]]['item'] = self.grid[x, y]['item']
+                            self.grid[x, y]['item'] = None
                             building.timer = 0.0
-                if building and building.type == 'Factory' and self.grid[x][y]['item'] != None:
-                    if building.materials < building.materialsneeded and self.grid[x][y]['item'].__class__ not in building.lastinput:
+                if building and building.type == 'Factory' and self.grid[x, y]['item'] != None:
+                    if building.materials < building.materialsneeded and self.grid[x, y]['item'].__class__ not in building.lastinput:
                         building.materials += 1
-                        building.lastinput.append(self.grid[x][y]['item'].__class__)
-                        self.grid[x][y]['item'] = None
+                        building.lastinput.append(self.grid[x, y]['item'].__class__)
+                        self.grid[x, y]['item'] = None
                     if not building.running and building.materials >= building.materialsneeded:
                         building.startproduction()
-                if building and building.type == 'Hangar' and self.grid[x][y]['item'] != None:
-                    self.money += self.grid[x][y]['item'].value
-                    self.grid[x][y]['item'] = None
+                if building and building.type == 'Hangar' and self.grid[x, y]['item'] != None:
+                    self.money += self.grid[x, y]['item'].value
+                    self.grid[x, y]['item'] = None
                 if building and (building.type == 'Extractor' or building.type == 'MultiExtractor'):
                     building.timer -= dt
                     adj = adjacent((x,y), building.dir)
-                    if building.timer <= 0.0 and self.grid[adj[0]][adj[1]]['item'] == None:
+                    if building.timer <= 0.0 and self.grid[adj[0], adj[1]]['item'] == None:
                         self.additem(adj, building.nextproduce())
                         building.reset_timer()
-                if self.grid[x][y]['item']:
-                    self.grid[x][y]['item'].step(dt)
-                    if self.grid[x][y]['item'].decay <= 0.0:
-                        self.grid[x][y]['item'] = None
+                if self.grid[x, y]['item']:
+                    self.grid[x, y]['item'].step(dt)
+                    if self.grid[x, y]['item'].decay <= 0.0:
+                        self.grid[x, y]['item'] = None
+                if self.grid[x, y]['item'] == None and self.grid[x, y]['building'] == None:
+                    del self.grid[x, y]
         for building in self.buildings:
             if building.type == 'Factory':
                 if building.running:
                     building.prodtime -= dt
-                    if building.prodtime <= 0.0 and self.grid[building.output[0]][building.output[1]]['item'] == None:
+                    if building.prodtime <= 0.0 and self.grid[building.output[0], building.output[1]]['item'] == None:
                         building.running = False
                         self.additem(building.output, building.production())
 
