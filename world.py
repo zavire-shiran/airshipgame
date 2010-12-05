@@ -120,6 +120,8 @@ class Game(World):
         self.dir = 'left'
         self.currentbuild = None
         self.defaultlayout()
+        self.campos = [0,0]
+        self.cammove =[False, False, False, False] #up, down, left, right
     def defaultlayout(self):
         self.money = 0
         self.moneyhist = [self.money]
@@ -169,9 +171,25 @@ class Game(World):
             self.dumpbuildings()
         if key == pygame.K_F9:
             self.defaultlayout()
+        if key == pygame.K_UP:
+            self.cammove[0] = True
+        if key == pygame.K_DOWN:
+            self.cammove[1] = True
+        if key == pygame.K_LEFT:
+            self.cammove[2] = True
+        if key == pygame.K_RIGHT:
+            self.cammove[3] = True
     def keyup(self,key):
-        pass
+        if key == pygame.K_UP:
+            self.cammove[0] = False
+        if key == pygame.K_DOWN:
+            self.cammove[1] = False
+        if key == pygame.K_LEFT:
+            self.cammove[2] = False
+        if key == pygame.K_RIGHT:
+            self.cammove[3] = False
     def click(self, pos):
+        pos = (pos[0] + self.campos[0], pos[1] + self.campos[1])
         gpos = world2game(pos, self.size)
         x, y = gpos
         if self.currentbuild == 'select':
@@ -212,6 +230,8 @@ class Game(World):
     def additem(self, pos, item):
         self.grid[pos[0], pos[1]]['item'] = item
     def draw(self):
+        glLoadIdentity()
+        glTranslate(-self.campos[0], -self.campos[1], 0.0)
         glColor(1.0, 1.0, 1.0, 1.0)
         for x,y in self.grid.keys():
             drawsquare(game2world((float(x),float(y)), self.size), (self.gridsize[0] * 0.98, self.gridsize[1] * 0.98))
@@ -231,6 +251,14 @@ class Game(World):
             self.timeuntilmoneysave += 1.0
             if len(self.moneyhist) > 30:
                 del self.moneyhist[0]
+        if self.cammove[0]:
+            self.campos[1] -= dt
+        if self.cammove[1]:
+            self.campos[1] += dt
+        if self.cammove[2]:
+            self.campos[0] -= dt
+        if self.cammove[3]:
+            self.campos[0] += dt
         li = self.grid.keys()[:]
         random.shuffle(li)
         for x, y in li:
