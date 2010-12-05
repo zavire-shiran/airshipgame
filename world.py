@@ -167,12 +167,6 @@ class Game(World):
             self.currentbuild = 'select'
         if key == pygame.K_l:
             self.dumpbuildings()
-        if key == pygame.K_F2:
-            self.layout1()
-        if key == pygame.K_F3:
-            self.layout2()
-        if key == pygame.K_F4:
-            self.layout3()
         if key == pygame.K_F9:
             self.defaultlayout()
     def keyup(self,key):
@@ -287,13 +281,21 @@ class Game(World):
                         self.grid[x, y]['item'] = None
                 if not self.grid[x, y]['buildable']:
                     del self.grid[x, y]
-        for building in self.buildings:
+        for building in self.buildings[:]:
+            if not self.grid[building.pos]['buildable']:
+                self.buildings.remove(building)
+                continue
             if building.type == 'Factory':
                 if building.running:
                     building.prodtime -= dt
                     if building.prodtime <= 0.0 and self.grid[building.output[0], building.output[1]]['item'] == None:
                         building.running = False
                         self.additem(building.output, building.production())
+            if building.type == 'Balloon':
+                building.timer += dt
+                if building.timer > building.timetocost:
+                    self.money -= building.cost
+                    building.resettimer()
 
 
 def adjacent((x, y), dir):
@@ -494,6 +496,11 @@ class Balloon:
         self.pos = pos
         self.size = (1,1)
         self.type = 'Balloon'
+        self.cost = 10.0
+        self.timetocost = 10.0
+        self.resettimer()
+    def resettimer(self):
+        self.timer = 0
     def select(self):
         pass
     def draw(self, world):
