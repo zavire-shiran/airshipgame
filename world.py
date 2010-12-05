@@ -101,7 +101,7 @@ class Opening(World):
         drawsquare((0,0), (4,3), self.splash)
 
 def maketile():
-    return {'walkable':False, 'building':None, 'item':None}
+    return {'buildable':False, 'building':None, 'item':None}
 
 def make_grid(size):
     return defaultdict(maketile)
@@ -127,154 +127,19 @@ class Game(World):
         self.grid = make_grid(self.size)
         self.removeallbuildings()
         self.addbuilding(Hangar((11,8)))
-    def layout1(self):
-        self.defaultlayout()
-        for x in xrange(0, 12):
-            self.addbuilding(Conveyor((x, 9), 'right'))
-        for x in xrange(13, 24):
-            self.addbuilding(Conveyor((x, 9), 'left'))
-        for x in xrange(1,24,3):
-            for y in xrange(0, 9):
-                self.addbuilding(Extractor((x-1,y), 'right'))
-                self.addbuilding(Conveyor((x,y), 'down'))
-                self.addbuilding(Extractor((x+1,y), 'left'))
-        for x in xrange(1,24,3):
-            for y in xrange(10, 18):
-                self.addbuilding(Extractor((x-1,y), 'right'))
-                self.addbuilding(Conveyor((x,y), 'up'))
-                self.addbuilding(Extractor((x+1,y), 'left'))
-    def layout2(self):
-        self.defaultlayout()
-        for x in xrange(0, 12):
-            self.addbuilding(Conveyor((x, 9), 'right'))
-        for x in xrange(13, 24):
-            self.addbuilding(Conveyor((x, 9), 'left'))
-        for x in itertools.chain(xrange(0,7), xrange(18,24)):
-            self.addbuilding(MultiExtractor((x,8), 'down'))
-            self.addbuilding(MultiExtractor((x,10), 'up'))
-
-        for y in xrange(0, 9):
-            self.addbuilding(Conveyor((12,y), 'down'))
-        for y in xrange(10, 18):
-            self.addbuilding(Conveyor((12,y), 'up'))
-        for y in itertools.chain(xrange(0, 7), xrange(12,18)):
-            self.addbuilding(MultiExtractor((11,y), 'right'))
-            self.addbuilding(MultiExtractor((13,y), 'left'))
-
-        for x in xrange(7,11):
-            self.addbuilding(Conveyor((x,8), 'right'))
-            self.addbuilding(Conveyor((x,10), 'right'))
-        self.addbuilding(Conveyor((7,7),'down'))
-        self.addbuilding(Conveyor((6,7),'right'))
-        self.addbuilding(Conveyor((7,11),'up'))
-        self.addbuilding(Conveyor((6,11),'right'))
-        for y in xrange(0,9):
-            self.addbuilding(Conveyor((6,y), 'down'))
-            self.addbuilding(MultiExtractor((5,y), 'right'))
-            self.addbuilding(MultiExtractor((7,y), 'left'))
-        for y in xrange(9,18):
-            self.addbuilding(Conveyor((6,y), 'up'))
-            self.addbuilding(MultiExtractor((5,y), 'right'))
-            self.addbuilding(MultiExtractor((7,y), 'left'))
-
-        for x in xrange(13,18):
-            self.addbuilding(Conveyor((x,8), 'left'))
-            self.addbuilding(Conveyor((x,10), 'left'))
-        self.addbuilding(Conveyor((17,7),'down'))
-        self.addbuilding(Conveyor((18,7),'left'))
-        self.addbuilding(Conveyor((17,11),'up'))
-        self.addbuilding(Conveyor((18,11),'left'))
-        for y in xrange(0,9):
-            self.addbuilding(Conveyor((18,y), 'down'))
-            self.addbuilding(MultiExtractor((17,y), 'right'))
-            self.addbuilding(MultiExtractor((19,y), 'left'))
-        for y in xrange(9,18):
-            self.addbuilding(Conveyor((18,y), 'up'))
-            self.addbuilding(MultiExtractor((17,y), 'right'))
-            self.addbuilding(MultiExtractor((19,y), 'left'))
-            
-        self.addbuilding(Conveyor((11,7),'down'))
-        self.addbuilding(Conveyor((10,7),'right'))
-        self.addbuilding(Conveyor((9,7),'right'))
-        self.addbuilding(Conveyor((13,7),'down'))
-        self.addbuilding(Conveyor((14,7),'left'))
-        self.addbuilding(Conveyor((15,7),'left'))
-
-        self.addbuilding(Conveyor((11,11),'up'))
-        self.addbuilding(Conveyor((10,11),'right'))
-        self.addbuilding(Conveyor((9,11),'right'))
-        self.addbuilding(Conveyor((13,11),'up'))
-        self.addbuilding(Conveyor((14,11),'left'))
-        self.addbuilding(Conveyor((15,11),'left'))
-        for y in xrange(0, 9):
-            self.addbuilding(Conveyor((9,y), 'down'))
-        for y in xrange(10, 18):
-            self.addbuilding(Conveyor((9,y), 'up'))
-
-        for y in xrange(0, 9):
-            self.addbuilding(Conveyor((15,y), 'down'))
-        for y in xrange(10, 18):
-            self.addbuilding(Conveyor((15,y), 'up'))
-
-        for y in xrange(0,18):
-            self.addbuilding(MultiExtractor((8,y), 'right'))
-            self.addbuilding(MultiExtractor((10,y), 'left'))
-        for y in xrange(0,18):
-            self.addbuilding(MultiExtractor((14,y), 'right'))
-            self.addbuilding(MultiExtractor((16,y), 'left'))
-
-    def layout3(self):
-        self.defaultlayout()
-        self.addbuilding(Factory((11,4), 'down'))
-        self.addbuilding(Conveyor((12,7), 'down'))
-        for x in xrange(0,11):
-            self.addbuilding(Conveyor((x,4), 'right'))
-            if x < 7:
-                self.addbuilding(Extractor((x,5), 'up', ItemB))
-                self.addbuilding(Extractor((x,3), 'down', ItemB))
-        for x in xrange(14,24):
-            self.addbuilding(Conveyor((x,4), 'left'))
-            if x > 16:
-                self.addbuilding(Extractor((x,5), 'up'))
-                self.addbuilding(Extractor((x,3), 'down'))
-
-        self.addbuilding(Factory((11,12), 'up'))
-        self.addbuilding(Conveyor((12,11), 'up'))
-        for x in xrange(0,11):
-            self.addbuilding(Conveyor((x,14), 'right'))
-            if x < 7:
-                self.addbuilding(Extractor((x,15), 'up', ItemC))
-                self.addbuilding(Extractor((x,13), 'down', ItemC))
-        for x in xrange(14,24):
-            self.addbuilding(Conveyor((x,14), 'left'))
-            if x > 16:
-                self.addbuilding(Extractor((x,15), 'up'))
-                self.addbuilding(Extractor((x,13), 'down'))
-
-        self.addbuilding(Factory((7,8), 'right'))
-        self.addbuilding(Conveyor((10,9), 'right'))
-        self.addbuilding(Conveyor((7,7), 'down'))
-        self.addbuilding(Conveyor((7,11), 'up'))
-        for x in xrange(0,7):
-            self.addbuilding(Extractor((x,6), 'down', ItemB))
-            self.addbuilding(Conveyor((x,7), 'right'))
-            self.addbuilding(Extractor((x,8), 'up', ItemB))
-            self.addbuilding(Extractor((x,10), 'down', ItemC))
-            self.addbuilding(Conveyor((x,11), 'right'))
-            self.addbuilding(Extractor((x,12), 'up', ItemC))
-
-        self.addbuilding(Factory((15,8), 'left'))
-        self.addbuilding(Conveyor((14,9), 'left'))
-        self.addbuilding(Conveyor((17,7), 'down'))
-        self.addbuilding(Conveyor((17,11), 'up'))
-        for x in xrange(17,24):
-            self.addbuilding(MultiExtractor((x,6), 'down'))
-            self.addbuilding(Conveyor((x,7), 'left'))
-            self.addbuilding(MultiExtractor((x,8), 'up'))
-            self.addbuilding(MultiExtractor((x,10), 'down'))
-            self.addbuilding(Conveyor((x,11), 'left'))
-            self.addbuilding(MultiExtractor((x,12), 'up'))
-
+        self.recalcbuildable()
+    def recalcbuildable(self):
+        for x,y in self.grid.keys():
+            self.grid[x, y]['buildable'] = False
+        for building in self.buildings:
+            if building.type == 'Hangar':
+                for x in xrange(-3, 6):
+                    for y in xrange(-3, 6):
+                        self.grid[building.pos[0] + x, building.pos[1] + y]['buildable'] = True
+            if building.type == 'Balloon':
+                for x in xrange(-3, 4):
+                    for y in xrange(-3, 4):
+                        self.grid[building.pos[0] + x, building.pos[1] + y]['buildable'] = True
     def keydown(self, key):
         if key == pygame.K_w:
             self.dir = 'up'
@@ -296,6 +161,8 @@ class Game(World):
             self.currentbuild = Factory
         if key == pygame.K_r:
             self.currentbuild = Overflow
+        if key == pygame.K_b:
+            self.currentbuild = Balloon
         if key == pygame.K_z:
             self.currentbuild = 'select'
         if key == pygame.K_l:
@@ -317,11 +184,13 @@ class Game(World):
             if self.grid[x, y]['building']:
                 self.grid[x, y]['building'].select()
         elif self.currentbuild:
-            if self.grid[x, y]['building'] == None:
+            if self.grid[x, y]['buildable'] and self.grid[x, y]['building'] == None:
                 self.addbuilding(self.currentbuild(gpos, self.dir))
+                self.recalcbuildable()
         else:
             if self.grid[x, y]['building'] != None and self.grid[x, y]['building'].type != 'Hangar':
                 self.removebuilding(self.grid[x, y]['building'])
+                self.recalcbuildable()
     def addbuilding(self, building):
         if not self.buildingfitp(building):
             return
@@ -416,7 +285,7 @@ class Game(World):
                     self.grid[x, y]['item'].step(dt)
                     if self.grid[x, y]['item'].decay <= 0.0:
                         self.grid[x, y]['item'] = None
-                if self.grid[x, y]['item'] == None and self.grid[x, y]['building'] == None:
+                if not self.grid[x, y]['buildable']:
                     del self.grid[x, y]
         for building in self.buildings:
             if building.type == 'Factory':
@@ -614,6 +483,21 @@ class Hangar:
         pass
     def draw(self, world):
         pos, size, color, texture = self.pos, self.size, (0.6, 0.3, 0.0, 1.0), None
+        pos = pos[0] + 0.1, pos[1] + 0.1
+        size = size[0] - 0.2, size[1] - 0.2
+        glColor(*color)
+        drawsquare(game2world(pos, world.size), 
+                   (size[0] * world.gridsize[0], size[1] * world.gridsize[1]), texture, 1.0)
+
+class Balloon:
+    def __init__(self, pos, dir = None):
+        self.pos = pos
+        self.size = (1,1)
+        self.type = 'Balloon'
+    def select(self):
+        pass
+    def draw(self, world):
+        pos, size, color, texture = self.pos, self.size, (0.6, 0.3, 0.3, 1.0), None
         pos = pos[0] + 0.1, pos[1] + 0.1
         size = size[0] - 0.2, size[1] - 0.2
         glColor(*color)
