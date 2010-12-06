@@ -123,9 +123,10 @@ class Game(World):
         self.campos = [0,0]
         self.cammove =[False, False, False, False] #up, down, left, right
     def defaultlayout(self):
+        self.currenttime = 0
         self.money = 0
-        self.moneyhist = [self.money]
-        self.timeuntilmoneysave = 1.0
+        self.incomehist = []
+        self.expenditurehist = []
         self.grid = make_grid(self.size)
         self.removeallbuildings()
         self.addbuilding(Hangar((11,8)))
@@ -229,6 +230,12 @@ class Game(World):
             print building.type, building.pos
     def additem(self, pos, item):
         self.grid[pos[0], pos[1]]['item'] = item
+    def addincome(self, amount):
+        self.money += amount
+        self.incomehist.append((amount, self.currenttime))
+    def addexpenditure(self, amount):
+        self.money -= amount
+        self.expenditurehist.append((amount, self.currenttime))
     def draw(self):
         glLoadIdentity()
         glTranslate(-self.campos[0], -self.campos[1], 0.0)
@@ -243,14 +250,21 @@ class Game(World):
                 drawsquare(game2world((x + 0.25, y + 0.25), self.size), (self.gridsize[0] * 0.5, self.gridsize[1] * 0.5), None, 2.0)
         glColor(0.1, 0.8, 0.1)
         drawtext(game2world((12.5,8.5), self.size), '$'+str(self.money), 2.0)
-        drawtext(game2world((12.5,9.5), self.size), '$%.2f/sec' % ((self.money - self.moneyhist[0]) / 30.0), 2.0)
+        income = 0
+        expenditure = 0
+        for amount, time in self.incomehist:
+            income += amount
+        for amount, time in self.expenditurehist:
+            expenditure += amount
+        drawtext(game2world((12.5,9.5), self.size), '$%.2f/sec' % (income / 30.0), 2.0)
+        glColor(0.8, 0.1, 0.1)
+        drawtext(game2world((12.5,10.5), self.size), '$%.2f/sec' % (expenditure / 30.0), 2.0)
     def step(self, dt):
-        self.timeuntilmoneysave -= dt
-        if self.timeuntilmoneysave <= 0.0:
-            self.moneyhist.append(self.money)
-            self.timeuntilmoneysave += 1.0
-            if len(self.moneyhist) > 30:
-                del self.moneyhist[0]
+        self.currenttime += dt
+        while len(self.incomehist) > 0 and self.incomehist[0][1] < self.currenttime - 30:
+            del self.incomehist[0]
+        while len(self.expenditurehist) > 0 and self.expenditurehist[0][1] < self.currenttime - 30:
+            del self.expenditurehist[0]
         if self.cammove[0]:
             self.campos[1] -= dt
         if self.cammove[1]:
@@ -295,7 +309,7 @@ class Game(World):
                     if not building.running and building.materials >= building.materialsneeded:
                         building.startproduction()
                 if building and building.type == 'Hangar' and self.grid[x, y]['item'] != None:
-                    self.money += self.grid[x, y]['item'].value
+                    self.addincome(self.grid[x, y]['item'].value)
                     self.grid[x, y]['item'] = None
                 if building and (building.type == 'Extractor' or building.type == 'MultiExtractor'):
                     building.timer -= dt
@@ -322,7 +336,7 @@ class Game(World):
             if building.type == 'Balloon':
                 building.timer += dt
                 if building.timer > building.timetocost:
-                    self.money -= building.cost
+                    self.addexpenditure(building.cost)
                     building.resettimer()
 
 
