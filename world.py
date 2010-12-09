@@ -110,7 +110,7 @@ def game2world(pos, size):
     return ((pos[0] / size[0]) * worldsize[0], (pos[1] / size[1]) * worldsize[1])
 
 def world2game(pos, size):
-    return (int(pos[0] * size[0] / worldsize[0]), int(pos[1] * size[1] / worldsize[1]))
+    return (math.floor(pos[0] * size[0] / worldsize[0]), math.floor(pos[1] * size[1] / worldsize[1]))
 
 class Game(World):
     def __init__(self, previous = None):
@@ -190,8 +190,11 @@ class Game(World):
         if key == pygame.K_RIGHT:
             self.cammove[3] = False
     def click(self, pos):
+        print pos,
         pos = (pos[0] + self.campos[0], pos[1] + self.campos[1])
+        print pos,
         gpos = world2game(pos, self.size)
+        print gpos
         x, y = gpos
         if self.currentbuild == 'select':
             if self.grid[x, y]['building']:
