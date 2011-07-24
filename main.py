@@ -30,6 +30,8 @@ setworldsize(worldsize)
 transitionto(Game)
 
 lastframe = pygame.time.get_ticks()
+framelength = 0.05
+dt = 0
 
 while 1:
     for e in pygame.event.get():
@@ -43,10 +45,12 @@ while 1:
         elif e.type == pygame.MOUSEBUTTONDOWN:
             getworld().click([float(x) * ws / s for x, ws, s in zip(e.pos, worldsize, size)])
     thisframe = pygame.time.get_ticks()
-    dt = (thisframe - lastframe)/1000.0
+    dt += (thisframe - lastframe)/1000.0
 #    print dt
     lastframe = thisframe
-    getworld().step(dt)
+    while dt > framelength:
+        getworld().step(framelength)
+        dt -= framelength
     screen.startframe()
     getworld().draw()
     screen.endframe()
