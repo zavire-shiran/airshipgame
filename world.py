@@ -90,6 +90,8 @@ class World:
         pass
     def step(self, dt):
         pass
+    def mousemove(self, pos):
+        pass
 
 class Opening(World):
     def __init__(self, previous = None):
@@ -122,6 +124,7 @@ class Game(World):
         self.defaultlayout()
         self.campos = [0,0]
         self.cammove =[False, False, False, False] #up, down, left, right
+        self.mousepos = [0,0]
     def defaultlayout(self):
         self.currenttime = 0
         self.money = 0
@@ -189,11 +192,12 @@ class Game(World):
             self.cammove[2] = False
         if key == pygame.K_RIGHT:
             self.cammove[3] = False
+    def mousemove(self, pos):
+        self.mousepos = pos
+    def screen2game(self, pos):
+        return world2game((pos[0] + self.campos[0], pos[1] + self.campos[1]), self.size)
     def click(self, pos):
-        print pos,
-        pos = (pos[0] + self.campos[0], pos[1] + self.campos[1])
-        print pos,
-        gpos = world2game(pos, self.size)
+        gpos = self.screen2game(pos)
         print gpos
         x, y = gpos
         if self.currentbuild == 'select':
@@ -242,6 +246,8 @@ class Game(World):
     def draw(self):
         glLoadIdentity()
         glTranslate(-self.campos[0], -self.campos[1], 0.0)
+        glColor(1.0, 0.0, 0.0, 1.0)
+        drawsquare(game2world(self.mousepos, self.size), (self.gridsize[0] * 0.98, self.gridsize[1] * 0.98), None, 1.0)
         glColor(1.0, 1.0, 1.0, 1.0)
         for x,y in self.grid.keys():
             drawsquare(game2world((float(x),float(y)), self.size), (self.gridsize[0] * 0.98, self.gridsize[1] * 0.98))
